@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <!-- 页面meta -->
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>商品图片管理</title>
+        <meta name="description" content="商品图片管理">
+        <meta name="keywords" content="商品图片管理">
+        <meta content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" name="viewport">
+        <!-- 引入样式 -->
+        <link rel="stylesheet" href="../js/elementui/index.css">
+        <link rel="stylesheet" href="../js/font-awesome/css/font-awesome.min.css">
+        <link rel="stylesheet" href="../css/backendcss/style.css">
+    </head>
+    <body class="hold-transition">
+        <div id="app">
+            <div class="content-header">
+                <h1>商品图片<small>商品管理</small></h1>
+                <el-breadcrumb separator-class="el-icon-arrow-right" class="breadcrumb">
+                    <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+                    <el-breadcrumb-item>商品管理</el-breadcrumb-item>
+                    <el-breadcrumb-item>商品图片</el-breadcrumb-item>
+                </el-breadcrumb>
+            </div>
+            <div class="app-container">
+                <div class="box">
+                    <div class="filter-container">
+                        <el-input placeholder="商品名称" v-model="pagination.queryString" style="width: 200px;" class="filter-item"></el-input>
+                        <el-button @click="findPage1()" class="dalfBut">查询</el-button>
+                        <el-button type="primary" class="butT" @click="handleCreate()">新建</el-button>
+                    </div>
+                    <el-table size="small" current-row-key="id" :data="dataList" stripe highlight-current-row>
+                        <el-table-column  align="center" label="编号" prop="id"></el-table-column>
+                        <el-table-column prop="path" label="图片路径" align="center"></el-table-column>
+                        <el-table-column prop="title" label="商品名称" align="center"></el-table-column>
+                        <el-table-column prop="alt" label="描述备注" align="center"></el-table-column>
+                        <el-table-column prop="goodsId" label="所属ID" align="center"></el-table-column>
+                        <el-table-column label="操作" align="center">
+                            <template slot-scope="scope">
+                                <el-button type="primary" size="mini" @click="handleUpdate(scope.row)">编辑</el-button>
+                                <el-button size="mini" type="danger" @click="handleDelete(scope.row)">删除</el-button>
+                            </template>
+                        </el-table-column>
+                    </el-table>
+                    <div class="pagination-container">
+                        <el-pagination
+                            class="pagiantion"
+                            @current-change="handleCurrentChange"
+                            :current-page="pagination.currentPage"
+                            :page-size="pagination.pageSize"
+                            layout="total, prev, pager, next, jumper"
+                            :total="pagination.total">
+                        </el-pagination>
+                    </div>
+                    <!-- 新增标签弹层 -->
+                    <div class="add-form">
+                        <el-dialog title="新增商品图片" :visible.sync="dialogFormVisible">
+                            <el-form ref="dataAddForm" :model="formData" :rules="rules" label-position="right" label-width="100px">
+                                <el-row>
+                                    <el-col :span="12">
+                                        <el-form-item label="商品名称" prop="title">
+                                            <el-input v-model="formData.title"/>
+                                        </el-form-item>
+                                    </el-col>
+                                </el-row>
+                                <el-row>
+                                    <el-col :span="12">
+                                        <el-form-item label="描述信息" prop="alt">
+                                            <el-input v-model="formData.alt"/>
+                                        </el-form-item>
+                                    </el-col>
+                                </el-row>
+                                <el-row>
+                                    <el-col :span="12">
+                                        <el-form-item label="所属ID" prop="goodsId">
+                                            <el-input v-model="formData.goodsId"/>
+                                        </el-form-item>
+                                    </el-col>
+                                </el-row>
+                                <el-row>
+                                    <el-col :span="24">
+                                        <el-form-item label="上传图片">
+                                            <el-upload
+                                                    class="avatar-uploader"
+                                                    action="/backendgoodsimages/saveImage.do"
+                                                    :auto-upload="autoUpload"
+                                                    name="imgFile"
+                                                    :show-file-list="false"
+                                                    :on-success="handleAvatarSuccess"
+                                                    :before-upload="beforeAvatarUpload">
+                                                <img v-if="imageUrl" :src="imageUrl" class="avatar" style="width: 256px">
+                                                <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+                                            </el-upload>
+                                        </el-form-item>
+                                    </el-col>
+                                </el-row>
+                            </el-form>
+                            <div slot="footer" class="dialog-footer">
+                                <el-button @click="dialogFormVisible = false">取消</el-button>
+                                <el-button type="primary" @click="handleAdd()">确定</el-button>
+                            </div>
+                        </el-dialog>
+                    </div>
+
+                    <!-- 编辑标签弹层 -->
+                    <div class="add-form">
+                        <el-dialog title="编辑分类信息" :visible.sync="dialogFormVisible4Edit">
+                            <el-form ref="dataEditForm" :model="formData" :rules="rules" label-position="right" label-width="100px">
+                                <el-row>
+                                    <el-col :span="12">
+                                        <el-form-item label="商品名称" prop="title">
+                                            <el-input v-model="formData.title"/>
+                                        </el-form-item>
+                                    </el-col>
+                                </el-row>
+                                <el-row>
+                                    <el-col :span="12">
+                                        <el-form-item label="描述信息" prop="alt">
+                                            <el-input v-model="formData.alt"/>
+                                        </el-form-item>
+                                    </el-col>
+                                </el-row>
+                                <el-row>
+                                    <el-col :span="12">
+                                        <el-form-item label="所属ID" prop="goodsId">
+                                            <el-input v-model="formData.goodsId"/>
+                                        </el-form-item>
+                                    </el-col>
+                                </el-row>
+                                <el-row>
+                                    <el-col :span="24">
+                                        <el-form-item label="上传图片">
+                                            <el-upload
+                                                    class="avatar-uploader"
+                                                    action="/backendgoodsimages/saveImage.do"
+                                                    :auto-upload="autoUpload"
+                                                    name="imgFile"
+                                                    :show-file-list="false"
+                                                    :on-success="handleAvatarSuccess"
+                                                    :before-upload="beforeAvatarUpload">
+                                                <img v-if="imageUrl" :src="imageUrl" class="avatar" style="width: 256px">
+                                                <i v-else class="el-icon-plus avatar-uploader-icon"></i>
+                                            </el-upload>
+                                        </el-form-item>
+                                    </el-col>
+                                </el-row>
+                            </el-form>
+                            <div slot="footer" class="dialog-footer">
+                                <el-button @click="dialogFormVisible4Edit = false">取消</el-button>
+                                <el-button type="primary" @click="handleEdit()">确定</el-button>
+                            </div>
+                        </el-dialog>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>-
+    <!-- 引入组件库 -->
+    <script src="../js/vue/vue.js"></script>
+    <script src="../js/elementui/index.js"></script>
+    <script type="text/javascript" src="../js/jquery-3.4.1.min.js"></script>
+    <script src="../js/vue/axios-0.18.0.js"></script>
+    <script>
+        var vue = new Vue({
+            el: '#app',
+            data:{
+                pagination: {//分页相关模型数据
+					  currentPage: 1,//当前页码
+					  pageSize:10,//每页显示的记录数
+					  total:0,//总记录数
+					  queryString:null//查询条件
+				},
+                autoUpload:true,//自动上传
+                imageUrl:null,//模型数据，用于上传图片完成后图片预览
+				dataList: [],//当前页要展示的分页列表数据
+                formData: {},//表单数据
+                dialogFormVisible: false,//增加表单是否可见
+                dialogFormVisible4Edit:false,//编辑表单是否可见
+                rules: {//校验规则
+                    title: [{ required: true, message: '商品名称为必填项', trigger: 'blur' }],
+                    alt: [{ required: true, message: '描述信息为必填项', trigger: 'blur' }],
+                    goodsId: [{ required: true, message: '所属ID为必填项', trigger: 'blur' }],
+                    imageUrl: [{ required: true, message: '图片为必填项', trigger: 'blur' }],
+                }
+            },
+
+            //钩子函数，VUE对象初始化完成后自动执行
+            created() {
+                this.findPage();
+            },
+            methods: {
+                //文件上传成功后的钩子，response为服务端返回的值，file为当前上传的文件封装成的js对象
+                handleAvatarSuccess(response, file) {
+                    console.log(response);
+                    this.imageUrl = response.objectMap.imagesPath;
+                    //设置模型数据（图片名称），后续提交ajax请求时会提交到后台最终保存到数据库
+
+                    this.formData.path = response.objectMap.imagesPath;
+                },
+                //上传图片之前执行
+                beforeAvatarUpload(file) {
+                    const isJPG = file.type === 'image/jpeg' || file.type === 'image/png';
+                    const isLt2M = file.size / 1024 / 1024 < 2;
+                    if (!isJPG) {
+                        this.$message.error('上传图片只能是 JPG 或 PNG 格式!');
+                    }
+                    if (!isLt2M) {
+                        this.$message.error('上传套餐图片大小不能超过 2MB!');
+                    }
+                    return isJPG && isLt2M;
+                },
+                //编辑
+                handleEdit() {
+                    this.$refs['dataEditForm'].validate((vaild)=>{
+                        if(vaild){
+                            // 表单验证通过
+                            axios.post("/backendgoodsimages/editItem.do",this.formData).then((response)=>{
+                                this.dialogFormVisible4Edit=false;
+                                if(response.data.errorCode ==="100"){
+                                    // 编辑成功
+                                    this.$message({
+                                        message:response.data.errorMsg,
+                                        type:'success'
+                                    });
+                                }else{
+                                    // 编辑失败
+                                    this.$message.error(response.data.errorMsg);
+                                }
+                            }).finally(()=>{
+                                // 不管怎么样 刷新数据。分页
+                                this.findPage();
+                            })
+                        }
+                        else{
+                            // 表单检验是失败的
+                            this.$message.error("表单检验失败，请检查后重试！");
+                            return false;
+                        }
+                    });
+                },
+                //添加
+                handleAdd () {
+                    // 校验
+                    this.$refs["dataAddForm"].validate((valid) => {
+                        if (valid) {
+                            // 数据收集
+                            console.log(this.formData);
+                            axios.post("/backendgoodsimages/addItem.do",this.formData).then(res=>{
+                                console.log(res);
+                              if(res.data.errorCode ==="100"){
+                                  // 消息提示
+                                  this.$message({
+                                      message:res.data.errorMsg,
+                                      type:'success'
+                                  });
+
+                              }else{
+                                  // 消息提示
+                                  this.$message.error(res.data.errorMsg)
+                              }
+                                this.dialogFormVisible=false;
+                            })
+                        } else {
+                            console.log('error submit!!');
+                            return false;
+                        }
+                    });
+                },
+                // 分页查询
+                findPage() {
+                    // 查询数据
+                    let params = {
+                        currentPage:this.pagination.currentPage,
+                        pageSize: this.pagination.pageSize,
+                        queryString: this.pagination.queryString
+                    }
+                    console.log(params.queryString);
+                    if(this.pagination.queryString === ""){
+                        params.queryString = null;
+                    }
+                    axios.post("/backendgoodsimages/findPage.do",params).then(res=>{
+                        console.log(res);
+                        this.dataList = res.data.listResult;
+                        this.pagination.total = res.data.totalPagesize;
+                    })
+                },
+                findPage1(){
+                    this.pagination.currentPage = 1;
+                    this.findPage();
+                },
+                // 重置表单
+                resetForm() {
+                },
+                // 弹出添加窗口
+                handleCreate() {
+                    // 删除之前数据 清空
+                    this.formData = {}
+                    this.dialogFormVisible=true
+                },
+                // 弹出编辑窗口
+                handleUpdate(row) {
+                    console.log(row);
+                    this.dialogFormVisible4Edit=true;
+                    this.formData={}
+                    this.imageUrl = "../"+row.path;
+                    this.formData={
+                        id:row.id,
+                        title:row.title,
+                        alt:row.alt,
+                        goodsId:row.goodsId,
+                        path:row.path,
+                        imageUrl:row.path,
+                    };
+
+                    }
+                ,
+                //切换页码
+                handleCurrentChange(currentPage) {
+                    this.pagination.currentPage = currentPage;
+                    this.findPage();
+                },
+                // 删除
+                handleDelete(row) {
+                    this.$confirm("确认删除当前记录吗？","提示：",{type: 'warning'}).then(()=>{
+                       axios.get("/backendgoodsimages/deleteItem.do?id="+row.id).then((res)=>{
+                           if(res.data.errorCode ==="200"){
+                               // 删除失败
+                               this.$message.error(res.data.errorMsg);
+                           }
+                           else{
+                               // 删除成功
+                               this.$message({
+                                   message:res.data.errorMsg,
+                                   type:'success'
+                               });
+                               // 调用分页，刷新
+                               this.findPage();
+                           }
+                       })
+                    });
+                }
+            }
+        })
+    </script>
+</html>
